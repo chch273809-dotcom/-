@@ -153,3 +153,101 @@ with st.expander("Top countries by MBTI type"):
 # pandas==2.2.2
 # plotly==5.18.0
 # numpy==1.26.0
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import numpy as np
+
+# 예시 데이터 (사용자 데이터로 교체 가능)
+data = {
+    'Country': ['South Korea', 'USA', 'Japan', 'Germany', 'France', 'UK', 'Canada', 'Brazil', 'India', 'Australia', 'Italy'],
+    'INTJ': [8, 6, 7, 5, 6, 7, 6, 5, 4, 6, 5],
+    'ENFP': [10, 12, 9, 8, 9, 10, 11, 7, 6, 9, 8],
+    'ISTP': [7, 5, 8, 6, 7, 6, 5, 4, 6, 5, 7],
+    'INFJ': [9, 8, 7, 6, 5, 6, 7, 5, 4, 5, 6],
+}
+df = pd.DataFrame(data)
+
+st.title("🌍 MBTI 세계 비교 대시보드")
+
+tab1, tab2 = st.tabs(["국가별 MBTI 비율", "MBTI별 국가 순위"])
+
+# ------------------------------
+# 📊 탭 1: 국가별 MBTI 비율
+# ------------------------------
+with tab1:
+    st.subheader("국가별 MBTI 비율 비교")
+
+    country = st.selectbox("국가를 선택하세요:", df['Country'].unique())
+
+    # 해당 국가 데이터 추출
+    row = df[df['Country'] == country].iloc[0]
+    mbti_values = row[1:]
+    mbti_df = pd.DataFrame({
+        'MBTI': mbti_values.index,
+        'Value': mbti_values.values
+    }).sort_values('Value', ascending=False)
+
+    # 색상 설정 (1등은 빨강, 나머지는 파랑 그라데이션 역방향)
+    colors = ['red'] + px.colors.sequential.Blues[::-1][:len(mbti_df)-1]
+
+    fig = px.bar(
+        mbti_df,
+        x='MBTI',
+        y='Value',
+        text='Value',
+        color=mbti_df['MBTI'],
+        color_discrete_sequence=colors
+    )
+    fig.update_traces(textposition='outside')
+    fig.update_layout(
+        showlegend=False,
+        yaxis_title="비율(%)",
+        xaxis_title="MBTI 유형",
+        title=f"{country}의 MBTI 비율",
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+# ------------------------------
+# 📊 탭 2: MBTI별 국가 순위
+# ------------------------------
+with tab2:
+    st.subheader("MBTI별 국가 비율 상위 10개")
+
+    mbti_type = st.selectbox("MBTI 유형을 선택하세요:", df.columns[1:])
+
+    sorted_df = df.sort_values(by=mbti_type, ascending=False)
+    top10 = sorted_df.head(10)
+
+    # South Korea 포함 확인
+    if 'South Korea' not in top10['Country'].values:
+        sk_row = df[df['Country'] == 'South Korea']
+        top10 = pd.concat([top10, sk_row])
+
+    # 색상 설정
+    colors = []
+    for country in top10['Country']:
+        if country == 'South Korea':
+            colors.append('rgb(180, 60, 180)')  # 보라톤 (빨+파 믹스)
+        else:
+            colors.append('rgb(0, 100, 255)')
+
+    fig2 = px.bar(
+        top10,
+        x='Country',
+        y=mbti_type,
+        text=mbti_type,
+        color='Country',
+        color_discrete_sequence=colors
+    )
+
+    fig2.update_traces(textposition='outside')
+    fig2.update_layout(
+        showlegend=False,
+        yaxis_title="비율(%)",
+        xaxis_title="국가",
+        title=f"{mbti_type} 유형 비율이 높은 국가 Top 10",
+    )
+
+    st.plotly_chart(fig2, use_container_width=True)
