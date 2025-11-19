@@ -7,3 +7,7 @@ streamlit
 pandas
 plotly
 numpy
+# requirements.txt
+streamlit
+pandas
+plotly
